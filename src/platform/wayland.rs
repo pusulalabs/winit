@@ -21,6 +21,8 @@ use crate::event_loop::{ActiveEventLoop, EventLoop, EventLoopBuilder};
 use crate::monitor::MonitorHandle;
 use crate::window::{Window, WindowAttributes};
 
+pub use sctk::reexports::csd_frame::WindowManagerCapabilities;
+
 pub use crate::window::Theme;
 
 /// Additional methods on [`ActiveEventLoop`] that are specific to Wayland.
@@ -81,6 +83,11 @@ impl<T> EventLoopBuilderExtWayland for EventLoopBuilder<T> {
 pub trait WindowExtWayland {
     /// Returns `xdg_toplevel` of the window or [`None`] if the window is X11 window.
     fn xdg_toplevel(&self) -> Option<NonNull<c_void>>;
+
+    /// Returns the window management actions the compositor advertised with
+    /// `xdg_toplevel.wm_capabilities`, or [`None`] if the window is X11 window
+    /// or has not been configured yet.
+    fn wm_capabilities(&self) -> Option<WindowManagerCapabilities>;
 }
 
 impl WindowExtWayland for Window {
@@ -92,6 +99,17 @@ impl WindowExtWayland for Window {
             crate::platform_impl::Window::X(_) => None,
             #[cfg(wayland_platform)]
             crate::platform_impl::Window::Wayland(window) => window.xdg_toplevel(),
+        }
+    }
+
+    #[inline]
+    fn wm_capabilities(&self) -> Option<WindowManagerCapabilities> {
+        #[allow(clippy::single_match)]
+        match &self.window {
+            #[cfg(x11_platform)]
+            crate::platform_impl::Window::X(_) => None,
+            #[cfg(wayland_platform)]
+            crate::platform_impl::Window::Wayland(window) => window.wm_capabilities(),
         }
     }
 }

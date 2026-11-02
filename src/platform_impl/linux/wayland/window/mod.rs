@@ -10,6 +10,7 @@ use sctk::reexports::client::protocol::wl_surface::WlSurface;
 use sctk::reexports::client::{Proxy, QueueHandle};
 
 use sctk::compositor::{CompositorState, Region, SurfaceData};
+use sctk::reexports::csd_frame::WindowManagerCapabilities;
 use sctk::reexports::protocols::xdg::activation::v1::client::xdg_activation_v1::XdgActivationV1;
 use sctk::shell::xdg::window::{Window as SctkWindow, WindowDecorations};
 use sctk::shell::WaylandSurface;
@@ -234,6 +235,15 @@ impl Window {
 
     pub(crate) fn xdg_toplevel(&self) -> Option<NonNull<c_void>> {
         NonNull::new(self.window.xdg_toplevel().id().as_ptr().cast())
+    }
+
+    pub(crate) fn wm_capabilities(&self) -> Option<WindowManagerCapabilities> {
+        self.window_state
+            .lock()
+            .unwrap()
+            .last_configure
+            .as_ref()
+            .map(|last_configure| last_configure.capabilities)
     }
 }
 

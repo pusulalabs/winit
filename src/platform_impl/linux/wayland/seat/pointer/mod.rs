@@ -16,6 +16,7 @@ use sctk::reexports::protocols::wp::pointer_constraints::zv1::client::zwp_locked
 use sctk::reexports::protocols::wp::cursor_shape::v1::client::wp_cursor_shape_device_v1::WpCursorShapeDeviceV1;
 use sctk::reexports::protocols::wp::cursor_shape::v1::client::wp_cursor_shape_manager_v1::WpCursorShapeManagerV1;
 use sctk::reexports::protocols::wp::pointer_constraints::zv1::client::zwp_pointer_constraints_v1::{Lifetime, ZwpPointerConstraintsV1};
+use sctk::reexports::protocols::wp::pointer_warp::v1::client::wp_pointer_warp_v1::WpPointerWarpV1;
 use sctk::reexports::client::globals::{BindError, GlobalList};
 use sctk::reexports::csd_frame::FrameClick;
 use sctk::reexports::protocols::wp::viewporter::client::wp_viewport::WpViewport;
@@ -468,6 +469,41 @@ impl Dispatch<ZwpConfinedPointerV1, GlobalData, WinitState> for PointerConstrain
     }
 }
 
+/// Moves the pointer within a surface it is over (`wp_pointer_warp_v1`).
+pub struct PointerWarpState {
+    pointer_warp: WpPointerWarpV1,
+}
+
+impl PointerWarpState {
+    pub fn new(
+        globals: &GlobalList,
+        queue_handle: &QueueHandle<WinitState>,
+    ) -> Result<Self, BindError> {
+        let pointer_warp = globals.bind(queue_handle, 1..=1, GlobalData)?;
+        Ok(Self { pointer_warp })
+    }
+}
+
+impl Deref for PointerWarpState {
+    type Target = WpPointerWarpV1;
+
+    fn deref(&self) -> &Self::Target {
+        &self.pointer_warp
+    }
+}
+
+impl Dispatch<WpPointerWarpV1, GlobalData, WinitState> for PointerWarpState {
+    fn event(
+        _state: &mut WinitState,
+        _proxy: &WpPointerWarpV1,
+        _event: <WpPointerWarpV1 as wayland_client::Proxy>::Event,
+        _data: &GlobalData,
+        _conn: &Connection,
+        _qhandle: &QueueHandle<WinitState>,
+    ) {
+    }
+}
+
 impl Dispatch<WpCursorShapeDeviceV1, GlobalData, WinitState> for SeatState {
     fn event(
         _: &mut WinitState,
@@ -500,3 +536,4 @@ delegate_dispatch!(WinitState: [ WpCursorShapeDeviceV1: GlobalData] => SeatState
 delegate_dispatch!(WinitState: [ZwpPointerConstraintsV1: GlobalData] => PointerConstraintsState);
 delegate_dispatch!(WinitState: [ZwpLockedPointerV1: GlobalData] => PointerConstraintsState);
 delegate_dispatch!(WinitState: [ZwpConfinedPointerV1: GlobalData] => PointerConstraintsState);
+delegate_dispatch!(WinitState: [WpPointerWarpV1: GlobalData] => PointerWarpState);

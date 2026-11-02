@@ -1451,7 +1451,10 @@ impl Window {
     ///
     /// ## Platform-specific
     ///
-    /// - **Wayland**: Cursor must be in [`CursorGrabMode::Locked`].
+    /// - **Wayland**: Warps every pointer over the window with `wp_pointer_warp_v1` when the
+    ///   compositor offers it and the cursor is not in [`CursorGrabMode::Locked`]. The
+    ///   compositor may ignore the warp, for example for a position outside the surface.
+    ///   Otherwise the cursor must be in [`CursorGrabMode::Locked`].
     /// - **iOS / Android / Web / Orbital:** Always returns an [`ExternalError::NotSupported`].
     #[inline]
     pub fn set_cursor_position<P: Into<Position>>(&self, position: P) -> Result<(), ExternalError> {

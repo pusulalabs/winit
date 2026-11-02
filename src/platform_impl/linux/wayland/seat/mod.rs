@@ -25,7 +25,7 @@ mod text_input;
 mod touch;
 
 pub use pointer::relative_pointer::RelativePointerState;
-pub use pointer::{PointerConstraintsState, WinitPointerData, WinitPointerDataExt};
+pub use pointer::{PointerConstraintsState, PointerWarpState, WinitPointerData, WinitPointerDataExt};
 pub use text_input::{TextInputState, ZwpTextInputV3Ext};
 
 use keyboard::{KeyboardData, KeyboardState};

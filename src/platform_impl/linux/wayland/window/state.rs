@@ -40,7 +40,8 @@ use crate::platform_impl::{PlatformCustomCursor, WindowId};
 use crate::window::{CursorGrabMode, CursorIcon, ImePurpose, ResizeDirection, Theme};
 
 use crate::platform_impl::wayland::seat::{
-    PointerConstraintsState, WinitPointerData, WinitPointerDataExt, ZwpTextInputV3Ext,
+    PointerConstraintsState, PointerWarpState, WinitPointerData, WinitPointerDataExt,
+    ZwpTextInputV3Ext,
 };
 use crate::platform_impl::wayland::state::{WindowCompositorUpdate, WinitState};
 
@@ -76,6 +77,9 @@ pub struct WindowState {
 
     /// Pointer constraints to lock/confine pointer.
     pub pointer_constraints: Option<Arc<PointerConstraintsState>>,
+
+    /// Pointer warp to move the pointer without locking it.
+    pub pointer_warp: Option<Arc<PointerWarpState>>,
 
     /// Queue handle.
     pub queue_handle: QueueHandle<WinitState>,
@@ -174,6 +178,7 @@ impl WindowState {
     ) -> Self {
         let compositor = winit_state.compositor_state.clone();
         let pointer_constraints = winit_state.pointer_constraints.clone();
+        let pointer_warp = winit_state.pointer_warp.clone();
         let viewport = winit_state
             .viewporter_state
             .as_ref()
@@ -205,6 +210,7 @@ impl WindowState {
             min_inner_size: MIN_WINDOW_SIZE,
             resize_increments: None,
             pointer_constraints,
+            pointer_warp,
             pointers: Default::default(),
             queue_handle: queue_handle.clone(),
             resizable: true,
@@ -942,6 +948,24 @@ impl WindowState {
 
     /// Set the position of the cursor.
     pub fn set_cursor_position(&self, position: LogicalPosition<f64>) -> Result<(), ExternalError> {
+        if let Some(pointer_warp) = self.pointer_warp.as_ref() {
+            if self.cursor_grab_mode.current_grab_mode != CursorGrabMode::Locked {
+                // Like the locked position hint below, this applies to every
+                // seat's pointer over the window, as the request names none.
+                let surface = self.window.wl_surface();
+                self.apply_on_pointer(|pointer, data| {
+                    pointer_warp.warp_pointer(
+                        surface,
+                        pointer.pointer(),
+                        position.x,
+                        position.y,
+                        data.latest_enter_serial(),
+                    );
+                });
+                return Ok(());
+            }
+        }
+
         if self.pointer_constraints.is_none() {
             return Err(ExternalError::NotSupported(NotSupportedError::new()));
         }
